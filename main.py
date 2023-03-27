@@ -1,28 +1,63 @@
-import spotipy
-from spotipy.oauth2 import SpotifyOAuth
 import datetime
-import os
-from dotenv import load_dotenv
 import random
+from client import create_spotify_object
 
-# LOAD FROM .ENV
-load_dotenv()
+# CONSTANTS
+PLAYLIST_NAME = "📡  RECO DU JOUR  📡"
+SP = create_spotify_object()
+TODAY = datetime.date.today()
 
-CLIENT_ID = os.getenv('SPOTIPY_CLIENT_ID')
-CLIENT_SECRET = os.getenv('SPOTIPY_CLIENT_SECRET')
-REDIRECT_URI = os.getenv('SPOTIPY_REDIRECT_URI')
 
-# AUTH CREDENTIALS
-scope = "user-library-read user-top-read playlist-modify-public"
+def getTopTracks(number_of_tracks, time_range):
+    """
+    Get the top tracks of the user
+    :param number_of_tracks:
+    :param time_range: short_term | medium_term | long_term
+    :return: the top tracks of the user
+    """
+    return SP.current_user_top_tracks(limit=number_of_tracks, time_range=time_range)
 
-sp = spotipy.Spotify(
-    auth_manager=SpotifyOAuth(client_id=CLIENT_ID, client_secret=CLIENT_SECRET, redirect_uri=REDIRECT_URI, scope=scope))
 
-# GET TODAY DATE
-today = datetime.date.today()
+def setRecommendation(limit, seed_track_id, min_danceability, min_energy, min_popularity):
+    """
+    Set the recommendations
+    :param limit:
+    :param seed_track_id:
+    :param min_danceability:
+    :param min_energy:
+    :param min_popularity:
+    :return: the recommendations
+    """
+    recommendation_limit = limit
+    recommendation_seed_tracks = [seed_track_id]
+    recommendation_min_danceability = min_danceability
+    recommendation_min_energy = min_energy
+    recommendation_min_popularity = min_popularity
 
-# GET MY 20 TOP TRACKS
-top_tracks = sp.current_user_top_tracks(limit=50, time_range="short_term")
+    # GET RECOMMENDATIONS
+    return SP.recommendations(
+        limit=recommendation_limit,
+        seed_tracks=recommendation_seed_tracks,
+        min_danceability=recommendation_min_danceability,
+        min_energy=recommendation_min_energy,
+        min_popularity=recommendation_min_popularity
+    )
+
+
+def getPlaylistId():
+    """
+    Get the playlistId from existing playlist or create a new one if it doesn't exist
+    :return:
+    """
+    playlists = SP.current_user_playlists()
+    for playlist in playlists["items"]:
+        if playlist["name"] == PLAYLIST_NAME:
+            return playlist["id"]
+    return SP.user_playlist_create(user=SP.me()['id'], name=PLAYLIST_NAME, public=True)["id"]
+
+
+# GET MY TOP TRACKS
+top_tracks = getTopTracks(50, "short_term")
 
 # GET RANDOM TRACK FROM TOP TRACKS
 random = random.randint(0, 49)
@@ -30,47 +65,30 @@ seed_track_id = top_tracks['items'][random]['id']
 seed_track_name = top_tracks['items'][random]['name']
 seed_track_artist = top_tracks['items'][random]['artists'][0]['name']
 
-# SET RECOMMENDATION PARAMETERS
-recommendation_limit = 50
-recommendation_seed_tracks = [seed_track_id]
-recommendation_min_danceability = 0.5
-recommendation_min_energy = 0.5
-recommendation_min_popularity = 0
-
-# GET RECOMMENDATIONS
-recommendations = sp.recommendations(
-    limit=recommendation_limit,
-    seed_tracks=recommendation_seed_tracks,
-    min_danceability=recommendation_min_danceability,
-    min_energy=recommendation_min_energy,
-    min_popularity=recommendation_min_popularity
-)
+# SET RECOMMENDATIONS
+recommendations = setRecommendation(20, seed_track_id, 0.5, 0.5, 0)
 
 # PRINT RECOMMENDATIONS
-print(f"Les recommendations pour le {today.day}/{today.month.real}/{today.year} sont :")
+print(f"Les recommendations pour le {TODAY.day}/{TODAY.month.real}/{TODAY.year} sont :")
 for i, track in enumerate(recommendations['tracks']):
     print(f"{i + 1}. {track['name']} by {track['artists'][0]['name']}")
 
-# CREATION OF THE PLAYLIST
-playlists = sp.current_user_playlists()
-playlist_name = "📡  RECO DU JOUR  📡"
-for playlist in playlists["items"]:
-    if playlist["name"] == playlist_name:
-        playlist_id = playlist["id"]
-        break
-
+# GET PLAYLIST
+playlist_id = getPlaylistId()
 
 track_ids = [track['id'] for track in recommendations['tracks']]
 # UPDATE PLAYLIST DESCRIPTION
-sp.playlist_change_details(
+SP.playlist_change_details(
     playlist_id=playlist_id,
-    description="Autogénéré par l\'API de Spotify. Playlist créée le " + str(today.day) + "/" + str(today.month.real) + "/" + str(today.year) + "." + " La musique de référence est " + seed_track_name + " de " + seed_track_artist + "."
+    description="Autogénéré par l\'API de Spotify. Playlist créée le " + str(TODAY.day) + "/" + str(
+        TODAY.month.real) + "/" + str(
+        TODAY.year) + "." + " La musique de référence est " + seed_track_name + " de " + seed_track_artist + "."
 )
 
-sp.playlist_replace_items(
+SP.playlist_replace_items(
     playlist_id=playlist_id,
     items=track_ids
 )
 
 # DEBUG
-print(f"Playlist '{playlist_name}' has been created and updated with {len(track_ids)} tracks.")
+print(f"Playlist '{PLAYLIST_NAME}' has been created and updated with {len(track_ids)} tracks.")
