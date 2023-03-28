@@ -57,10 +57,10 @@ def getPlaylistId():
 
 
 # GET MY TOP TRACKS
-top_tracks = getTopTracks(50, "short_term")
+top_tracks = getTopTracks(20, "short_term")
 
 # GET RANDOM TRACK FROM TOP TRACKS
-random = random.randint(0, 49)
+random = random.randint(0, 19)
 seed_track_id = top_tracks['items'][random]['id']
 seed_track_name = top_tracks['items'][random]['name']
 seed_track_artist = top_tracks['items'][random]['artists'][0]['name']
