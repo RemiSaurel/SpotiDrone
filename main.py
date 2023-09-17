@@ -1,5 +1,6 @@
 import datetime
 import random
+import argparse
 from client import create_spotify_object
 
 # CONSTANTS
@@ -44,6 +45,17 @@ def setRecommendation(limit, seed_track_id, min_danceability, min_energy, min_po
     )
 
 
+def getNbTracksArgs():
+    """
+    Get the number of tracks from the args
+    :return: the number of tracks
+    """
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-n", "--number", type=int, help="Number of tracks on the playlist")
+    args = parser.parse_args()
+    return args.number
+
+
 def getPlaylistId():
     """
     Get the playlistId from existing playlist or create a new one if it doesn't exist
@@ -56,17 +68,18 @@ def getPlaylistId():
     return SP.user_playlist_create(user=SP.me()['id'], name=PLAYLIST_NAME, public=True)["id"]
 
 
+NB_TRACKS = getNbTracksArgs()
 # GET MY TOP TRACKS
-top_tracks = getTopTracks(20, "short_term")
+top_tracks = getTopTracks(NB_TRACKS, "short_term")
 
 # GET RANDOM TRACK FROM TOP TRACKS
-random = random.randint(0, 19)
+random = random.randint(0, NB_TRACKS - 1)
 seed_track_id = top_tracks['items'][random]['id']
 seed_track_name = top_tracks['items'][random]['name']
 seed_track_artist = top_tracks['items'][random]['artists'][0]['name']
 
 # SET RECOMMENDATIONS
-recommendations = setRecommendation(20, seed_track_id, 0.5, 0.5, 0)
+recommendations = setRecommendation(NB_TRACKS, seed_track_id, 0.5, 0.5, 0)
 
 # PRINT RECOMMENDATIONS
 print(f"Les recommendations pour le {TODAY.day}/{TODAY.month.real}/{TODAY.year} sont :")
