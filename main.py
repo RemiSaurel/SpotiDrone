@@ -12,7 +12,7 @@ TODAY = datetime.date.today()
 def getTopTracks(number_of_tracks, time_range):
     """
     Get the top tracks of the user
-    :param number_of_tracks:
+    :param number_of_tracks: number of tracks (max is 50)
     :param time_range: short_term | medium_term | long_term
     :return: the top tracks of the user
     """
@@ -69,11 +69,17 @@ def getPlaylistId():
 
 
 NB_TRACKS = getNbTracksArgs()
+# NO ARGS = DEFAULT VALUE
+if NB_TRACKS is None or NB_TRACKS > 50:
+    NB_TRACKS = 50
+
 # GET MY TOP TRACKS
 top_tracks = getTopTracks(NB_TRACKS, "short_term")
-
+print(len(top_tracks['items']))
 # GET RANDOM TRACK FROM TOP TRACKS
+print(f"Les {NB_TRACKS} titres les plus écoutés sont :")
 random = random.randint(0, NB_TRACKS - 1)
+print(random)
 seed_track_id = top_tracks['items'][random]['id']
 seed_track_name = top_tracks['items'][random]['name']
 seed_track_artist = top_tracks['items'][random]['artists'][0]['name']
